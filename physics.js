@@ -3,14 +3,10 @@
 // ===========================================
 
 const Physics = (() => {
-
   // ---- AABB Collision (two rectangles) ----
   function rectsOverlap(a, b) {
     return (
-      a.x < b.x + b.w &&
-      a.x + a.w > b.x &&
-      a.y < b.y + b.h &&
-      a.y + a.h > b.y
+      a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
     );
   }
 
@@ -23,7 +19,7 @@ const Physics = (() => {
     const dx = circle.x - closestX;
     const dy = circle.y - closestY;
 
-    return (dx * dx + dy * dy) < (circle.r * circle.r);
+    return dx * dx + dy * dy < circle.r * circle.r;
   }
 
   // ---- Check if player can move to new position ----
@@ -31,14 +27,18 @@ const Physics = (() => {
     const playerRect = { x: newX, y: newY, w: PLAYER_SIZE, h: PLAYER_SIZE };
 
     // Arena bounds
-    if (newX < 4 || newX + PLAYER_SIZE > CANVAS_WIDTH - 4 ||
-        newY < 4 || newY + PLAYER_SIZE > CANVAS_HEIGHT - 4) {
+    if (
+      newX < 0 ||
+      newX + PLAYER_SIZE > CANVAS_WIDTH ||
+      newY < 0 ||
+      newY + PLAYER_SIZE > CANVAS_HEIGHT
+    ) {
       return false;
     }
 
-    // Obstacle collision
-    for (const obs of OBSTACLES) {
-      if (rectsOverlap(playerRect, obs)) {
+    // Wall collision (uses active maze)
+    for (const wall of activeMaze.walls) {
+      if (rectsOverlap(playerRect, wall)) {
         return false;
       }
     }
@@ -46,12 +46,12 @@ const Physics = (() => {
     return true;
   }
 
-  // ---- Check bullet vs obstacles → returns true if bullet should be removed ----
+  // ---- Check bullet vs walls → returns true if bullet should be removed ----
   function bulletHitsObstacle(bullet) {
     const circle = { x: bullet.x, y: bullet.y, r: BULLET_SIZE / 2 };
 
-    for (const obs of OBSTACLES) {
-      if (circleRectOverlap(circle, obs)) {
+    for (const wall of activeMaze.walls) {
+      if (circleRectOverlap(circle, wall)) {
         return true;
       }
     }

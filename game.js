@@ -8,10 +8,21 @@ const Game = (() => {
   let countdownTimer = 0;
   let countdownValue = 0;
   let winner = null;
+  let selectedMazeKey = 'arena_classic';
+  let mazeRotationStart = 0; // timestamp when current maze started
+
+  // ---- Get spawn position from active maze ----
+  function getSpawn(playerId) {
+    const spawns = playerId === 1 ? activeMaze.p1Spawns : activeMaze.p2Spawns;
+    // Pick a random spawn if multiple exist
+    return spawns.length > 0
+      ? { ...spawns[Math.floor(Math.random() * spawns.length)] }
+      : { x: 100, y: 100 };
+  }
 
   // ---- Players ----
   function createPlayer(id) {
-    const spawn = id === 1 ? SPAWN_P1 : SPAWN_P2;
+    const spawn = getSpawn(id);
     const dir = id === 1 ? { ...DEFAULT_DIR_P1 } : { ...DEFAULT_DIR_P2 };
     return {
       id,
@@ -39,12 +50,16 @@ const Game = (() => {
     keys[e.code] = true;
 
     // Prevent scrolling from arrow keys / space
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+    if (
+      ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(
+        e.code,
+      )
+    ) {
       e.preventDefault();
     }
 
     // Restart on R when game over
-    if (e.code === 'KeyR' && gameState === STATE.GAME_OVER) {
+    if (e.code === "KeyR" && gameState === STATE.GAME_OVER) {
       restartGame();
     }
   }
@@ -84,10 +99,16 @@ const Game = (() => {
 
     // Try moving on each axis independently for smooth sliding along walls
     if (moved) {
-      if (Physics.canMoveTo(newX, player.y) && !collidesWithOtherPlayer(player, newX, player.y)) {
+      if (
+        Physics.canMoveTo(newX, player.y) &&
+        !collidesWithOtherPlayer(player, newX, player.y)
+      ) {
         player.x = newX;
       }
-      if (Physics.canMoveTo(player.x, newY) && !collidesWithOtherPlayer(player, player.x, newY)) {
+      if (
+        Physics.canMoveTo(player.x, newY) &&
+        !collidesWithOtherPlayer(player, player.x, newY)
+      ) {
         player.y = newY;
       }
     }
@@ -105,7 +126,7 @@ const Game = (() => {
 
     return Physics.rectsOverlap(
       { x: newX, y: newY, w: PLAYER_SIZE, h: PLAYER_SIZE },
-      { x: other.x, y: other.y, w: PLAYER_SIZE, h: PLAYER_SIZE }
+      { x: other.x, y: other.y, w: PLAYER_SIZE, h: PLAYER_SIZE },
     );
   }
 
@@ -177,7 +198,7 @@ const Game = (() => {
   }
 
   function updateRespawns(dt) {
-    [p1, p2].forEach(player => {
+    [p1, p2].forEach((player) => {
       if (!player.alive && player.respawnTimer > 0) {
         player.respawnTimer -= dt;
         if (player.respawnTimer <= 0) {
@@ -188,13 +209,56 @@ const Game = (() => {
   }
 
   function respawnPlayer(player) {
-    const spawn = player.id === 1 ? SPAWN_P1 : SPAWN_P2;
+    const spawn = getSpawn(player.id);
     player.x = spawn.x;
     player.y = spawn.y;
-    player.dir = player.id === 1 ? { ...DEFAULT_DIR_P1 } : { ...DEFAULT_DIR_P2 };
+    player.dir =
+      player.id === 1 ? { ...DEFAULT_DIR_P1 } : { ...DEFAULT_DIR_P2 };
     player.health = PLAYER_HEALTH;
     player.alive = true;
     player.respawnTimer = 0;
+  }
+
+  // ---- Maze Rotation (every 5 minutes) ----
+  function checkMazeRotation() {
+    const elapsed = Date.now() - mazeRotationStart;
+    if (elapsed >= MAZE_ROTATION_MS) {
+      rotateToRandomMaze();
+    }
+  }
+
+  function rotateToRandomMaze() {
+    // Pick a different maze
+    const otherKeys = MAZE_KEYS.filter(k => k !== activeMaze.key);
+    const newKey = otherKeys[Math.floor(Math.random() * otherKeys.length)];
+    switchMaze(newKey);
+    Renderer.showMazeAnnouncement(activeMaze.name);
+  }
+
+  function switchMaze(mazeKey) {
+    activeMaze = parseMaze(mazeKey);
+    selectedMazeKey = mazeKey;
+    mazeRotationStart = Date.now();
+
+    // Respawn both players at new maze spawns, keep scores
+    const spawn1 = getSpawn(1);
+    const spawn2 = getSpawn(2);
+    p1.x = spawn1.x; p1.y = spawn1.y;
+    p1.health = PLAYER_HEALTH; p1.alive = true; p1.respawnTimer = 0;
+    p1.dir = { ...DEFAULT_DIR_P1 };
+    p2.x = spawn2.x; p2.y = spawn2.y;
+    p2.health = PLAYER_HEALTH; p2.alive = true; p2.respawnTimer = 0;
+    p2.dir = { ...DEFAULT_DIR_P2 };
+    bullets = [];
+
+    // Update lobby selector highlight if visible
+    highlightSelectedMaze();
+  }
+
+  function highlightSelectedMaze() {
+    document.querySelectorAll('.maze-option').forEach(el => {
+      el.classList.toggle('selected', el.dataset.maze === selectedMazeKey);
+    });
   }
 
   // ---- Countdown ----
@@ -219,6 +283,7 @@ const Game = (() => {
     p2 = createPlayer(2);
     bullets = [];
     winner = null;
+    mazeRotationStart = Date.now();
     startCountdown();
   }
 
@@ -242,19 +307,27 @@ const Game = (() => {
 
       updateBullets();
       updateRespawns(dt);
+      checkMazeRotation();
     }
 
     // --- Render ---
     Renderer.drawArena();
-    Renderer.drawObstacles();
+    Renderer.drawMaze();
     Renderer.drawPlayer(p1, 'P1');
     Renderer.drawPlayer(p2, 'P2');
     Renderer.drawBullets(bullets);
-    Renderer.drawHUD(p1, p2);
+
+    // Maze timer for HUD
+    const mazeElapsed = (Date.now() - mazeRotationStart) / 1000;
+    const mazeTimeLeft = Math.max(0, MAZE_ROTATION_MS / 1000 - mazeElapsed);
+    Renderer.drawHUD(p1, p2, mazeTimeLeft);
 
     // Respawn timers
     if (!p1.alive) Renderer.drawRespawnTimer(p1, p1.respawnTimer);
     if (!p2.alive) Renderer.drawRespawnTimer(p2, p2.respawnTimer);
+
+    // Maze change announcement
+    Renderer.drawMazeAnnouncement(dt);
 
     // Overlays
     if (gameState === STATE.COUNTDOWN) {
@@ -269,24 +342,42 @@ const Game = (() => {
 
   // ---- Initialization ----
   function init() {
-    canvas = document.getElementById('gameCanvas');
-    ctx = canvas.getContext('2d');
+    canvas = document.getElementById("gameCanvas");
+    ctx = canvas.getContext("2d");
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
 
     Renderer.init(ctx);
 
     // Input listeners
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+  }
+
+  // ---- Select maze from lobby ----
+  function selectMaze(mazeKey) {
+    if (MAZES[mazeKey]) {
+      selectedMazeKey = mazeKey;
+      activeMaze = parseMaze(mazeKey);
+      highlightSelectedMaze();
+    }
   }
 
   // ---- Start local game (Phase 1 & 2) ----
   function startLocalGame() {
+    // Apply selected maze
+    activeMaze = parseMaze(selectedMazeKey);
+    mazeRotationStart = Date.now();
+
     // Hide lobby, show game
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('gameContainer').style.display = 'block';
     document.getElementById('controls-help').style.display = 'block';
+
+    // Re-create players with correct spawn for selected maze
+    p1 = createPlayer(1);
+    p2 = createPlayer(2);
+    bullets = [];
 
     init();
     startCountdown();
@@ -298,6 +389,7 @@ const Game = (() => {
     init,
     startLocalGame,
     restartGame,
+    selectMaze,
     getState: () => ({ p1, p2, bullets, gameState, winner }),
   };
 })();

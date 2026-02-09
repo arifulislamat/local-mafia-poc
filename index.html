@@ -1,66 +1,117 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>P2P Shooter POC</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>P2P Shooter POC</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- ===== Lobby Screen ===== -->
+    <div id="lobby">
+      <h1>⚔ P2P Shooter</h1>
+      <p>A peer-to-peer browser battle game</p>
 
-  <!-- ===== Lobby Screen ===== -->
-  <div id="lobby">
-    <h1>⚔ P2P Shooter</h1>
-    <p>A peer-to-peer browser battle game</p>
+      <!-- Maze Selector -->
+      <div id="maze-selector">
+        <h3>SELECT MAP</h3>
+        <div id="maze-grid"></div>
+      </div>
 
-    <div class="lobby-buttons">
-      <button class="btn btn-primary" onclick="Game.startLocalGame()">
-        ▶ Local 2-Player
-      </button>
-      <!-- Networking buttons will be added in Phase 3 -->
-      <!--
-      <button class="btn btn-secondary" onclick="createOnlineGame()">
-        🌐 Create Online Game
-      </button>
-      <button class="btn btn-secondary" onclick="showJoinUI()">
-        🔗 Join Online Game
-      </button>
-      -->
+      <div class="lobby-buttons">
+        <button class="btn btn-primary" onclick="Game.startLocalGame()">
+          ▶ Local 2-Player
+        </button>
+      </div>
+
+      <p class="maze-rotation-note">Maps rotate randomly every 5 minutes during gameplay</p>
     </div>
-  </div>
 
-  <!-- ===== Connection UI (Phase 3) ===== -->
-  <div id="connectionUI">
-    <p id="connectionStatus">Initializing...</p>
-  </div>
+    <!-- Maze selector builder script (runs after constants.js) -->
+    <script>
+      function buildMazeSelector() {
+        const grid = document.getElementById('maze-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        MAZE_KEYS.forEach((key, i) => {
+          const maze = MAZES[key];
+          const div = document.createElement('div');
+          div.className = 'maze-option' + (i === 0 ? ' selected' : '');
+          div.dataset.maze = key;
+          div.onclick = () => {
+            Game.selectMaze(key);
+            document.querySelectorAll('.maze-option').forEach(el => el.classList.remove('selected'));
+            div.classList.add('selected');
+          };
 
-  <!-- ===== Game Canvas ===== -->
-  <div id="gameContainer">
-    <canvas id="gameCanvas"></canvas>
-  </div>
+          // Mini preview canvas
+          const preview = document.createElement('canvas');
+          const pw = 105, ph = 75;
+          preview.width = pw; preview.height = ph;
+          const pctx = preview.getContext('2d');
+          const cw = pw / maze.data[0].length;
+          const ch = ph / maze.data.length;
+          maze.data.forEach((row, r) => {
+            row.forEach((cell, c) => {
+              if (cell === 1) pctx.fillStyle = '#3a3a5c';
+              else if (cell === 2) pctx.fillStyle = '#00d4ff';
+              else if (cell === 3) pctx.fillStyle = '#ff4444';
+              else if (cell === 4) pctx.fillStyle = '#44ff44';
+              else if (cell === 5) pctx.fillStyle = '#ffaa00';
+              else pctx.fillStyle = '#0a0a1a';
+              pctx.fillRect(c * cw, r * ch, cw, ch);
+            });
+          });
 
-  <!-- ===== Controls Help ===== -->
-  <div id="controls-help" style="display: none;">
-    <span>
-      <strong style="color: #3498db;">P1:</strong>
-      <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> move
-      · <span class="key">Space</span> shoot
-    </span>
-    <span>
-      <strong style="color: #e74c3c;">P2:</strong>
-      <span class="key">↑</span><span class="key">←</span><span class="key">↓</span><span class="key">→</span> move
-      · <span class="key">Enter</span> shoot
-    </span>
-    <span>
-      <span class="key">R</span> restart
-    </span>
-  </div>
+          const name = document.createElement('div');
+          name.className = 'maze-name';
+          name.textContent = maze.name;
 
-  <!-- ===== Scripts (order matters) ===== -->
-  <script src="constants.js"></script>
-  <script src="physics.js"></script>
-  <script src="renderer.js"></script>
-  <script src="game.js"></script>
+          const desc = document.createElement('div');
+          desc.className = 'maze-desc';
+          desc.textContent = maze.desc;
 
-</body>
+          div.appendChild(preview);
+          div.appendChild(name);
+          div.appendChild(desc);
+          grid.appendChild(div);
+        });
+      }
+      // Build after DOM + constants are ready
+      window.addEventListener('DOMContentLoaded', () => setTimeout(buildMazeSelector, 0));
+    </script>
+
+    <!-- ===== Connection UI (Phase 3) ===== -->
+    <div id="connectionUI">
+      <p id="connectionStatus">Initializing...</p>
+    </div>
+
+    <!-- ===== Game Canvas ===== -->
+    <div id="gameContainer">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- ===== Controls Help ===== -->
+    <div id="controls-help" style="display: none">
+      <span>
+        <strong style="color: #3498db">P1:</strong>
+        <span class="key">W</span><span class="key">A</span
+        ><span class="key">S</span><span class="key">D</span> move ·
+        <span class="key">Space</span> shoot
+      </span>
+      <span>
+        <strong style="color: #e74c3c">P2:</strong>
+        <span class="key">↑</span><span class="key">←</span
+        ><span class="key">↓</span><span class="key">→</span> move ·
+        <span class="key">Enter</span> shoot
+      </span>
+      <span> <span class="key">R</span> restart </span>
+    </div>
+
+    <!-- ===== Scripts (order matters) ===== -->
+    <script src="constants.js"></script>
+    <script src="physics.js"></script>
+    <script src="renderer.js"></script>
+    <script src="game.js"></script>
+  </body>
 </html>
