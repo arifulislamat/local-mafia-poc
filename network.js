@@ -142,16 +142,23 @@ const Network = (() => {
       // Check underlying PeerConnection
       if (conn && conn.peerConnection) {
         const pc = conn.peerConnection;
-        if (pc.connectionState === "connected" || pc.iceConnectionState === "connected") {
+        if (
+          pc.connectionState === "connected" ||
+          pc.iceConnectionState === "connected"
+        ) {
           // PC connected but DataChannel not open yet — wait a bit more
           if (attempts > 5 && conn._dc) {
             console.log("[Net] PC connected, dc state:", conn._dc.readyState);
           }
         }
-        if (pc.connectionState === "failed" || pc.iceConnectionState === "failed") {
+        if (
+          pc.connectionState === "failed" ||
+          pc.iceConnectionState === "failed"
+        ) {
           console.error("[Net] ICE connection failed!");
           clearPollTimer();
-          if (callbacks.onError) callbacks.onError("Connection failed — try again");
+          if (callbacks.onError)
+            callbacks.onError("Connection failed — try again");
           return;
         }
       }
@@ -159,7 +166,8 @@ const Network = (() => {
       if (attempts > 150) {
         console.error("[Net] Connection poll timed out (15s)");
         clearPollTimer();
-        if (callbacks.onError) callbacks.onError("Connection timed out — try again");
+        if (callbacks.onError)
+          callbacks.onError("Connection timed out — try again");
       }
     }, 100);
   }
@@ -219,10 +227,16 @@ const Network = (() => {
     if (conn.peerConnection) {
       console.log("[Net] peerConnection exists at setup");
       conn.peerConnection.addEventListener("connectionstatechange", () => {
-        console.log("[Net] PC connectionState:", conn.peerConnection.connectionState);
+        console.log(
+          "[Net] PC connectionState:",
+          conn.peerConnection.connectionState,
+        );
       });
       conn.peerConnection.addEventListener("iceconnectionstatechange", () => {
-        console.log("[Net] PC iceConnectionState:", conn.peerConnection.iceConnectionState);
+        console.log(
+          "[Net] PC iceConnectionState:",
+          conn.peerConnection.iceConnectionState,
+        );
       });
       // Watch for datachannel event (host side)
       conn.peerConnection.addEventListener("datachannel", (e) => {
