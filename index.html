@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P2P Shooter POC</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ===== Lobby Screen ===== -->
+  <div id="lobby">
+    <h1>⚔ P2P Shooter</h1>
+    <p>A peer-to-peer browser battle game</p>
+
+    <div class="lobby-buttons">
+      <button class="btn btn-primary" onclick="Game.startLocalGame()">
+        ▶ Local 2-Player
+      </button>
+      <!-- Networking buttons will be added in Phase 3 -->
+      <!--
+      <button class="btn btn-secondary" onclick="createOnlineGame()">
+        🌐 Create Online Game
+      </button>
+      <button class="btn btn-secondary" onclick="showJoinUI()">
+        🔗 Join Online Game
+      </button>
+      -->
+    </div>
+  </div>
+
+  <!-- ===== Connection UI (Phase 3) ===== -->
+  <div id="connectionUI">
+    <p id="connectionStatus">Initializing...</p>
+  </div>
+
+  <!-- ===== Game Canvas ===== -->
+  <div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <!-- ===== Controls Help ===== -->
+  <div id="controls-help" style="display: none;">
+    <span>
+      <strong style="color: #3498db;">P1:</strong>
+      <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> move
+      · <span class="key">Space</span> shoot
+    </span>
+    <span>
+      <strong style="color: #e74c3c;">P2:</strong>
+      <span class="key">↑</span><span class="key">←</span><span class="key">↓</span><span class="key">→</span> move
+      · <span class="key">Enter</span> shoot
+    </span>
+    <span>
+      <span class="key">R</span> restart
+    </span>
+  </div>
+
+  <!-- ===== Scripts (order matters) ===== -->
+  <script src="constants.js"></script>
+  <script src="physics.js"></script>
+  <script src="renderer.js"></script>
+  <script src="game.js"></script>
+
+</body>
+</html>

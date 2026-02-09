@@ -1,0 +1,199 @@
+/* ===========================================
+   P2P Shooter POC — Styles
+   =========================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Courier New', Courier, monospace;
+  background: #1a1a2e;
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #e94560;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+}
+
+/* ---- Lobby ---- */
+#lobby {
+  text-align: center;
+  padding: 2rem;
+}
+
+#lobby p {
+  color: #aaa;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.lobby-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.75rem 2rem;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  border: 2px solid;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #e94560;
+  border-color: #e94560;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #c73650;
+}
+
+.btn-secondary {
+  background: transparent;
+  border-color: #e94560;
+  color: #e94560;
+}
+
+.btn-secondary:hover {
+  background: #e94560;
+  color: #fff;
+}
+
+/* ---- Connection UI ---- */
+#connectionUI {
+  display: none;
+  text-align: center;
+  padding: 2rem;
+}
+
+#connectionUI .room-code {
+  font-size: 2rem;
+  color: #e94560;
+  letter-spacing: 6px;
+  margin: 1rem 0;
+  user-select: all;
+}
+
+#connectionUI input {
+  padding: 0.75rem 1rem;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.2rem;
+  background: #16213e;
+  border: 2px solid #e94560;
+  color: #eee;
+  text-align: center;
+  letter-spacing: 4px;
+  width: 280px;
+  outline: none;
+}
+
+#connectionUI input::placeholder {
+  color: #555;
+  letter-spacing: 2px;
+}
+
+#connectionStatus {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.status-connected {
+  color: #2ecc71 !important;
+}
+
+.status-error {
+  color: #e74c3c !important;
+}
+
+/* ---- Canvas Wrapper ---- */
+#gameContainer {
+  display: none;
+  position: relative;
+}
+
+canvas {
+  border: 3px solid #e94560;
+  display: block;
+  background: #f0f0f0;
+}
+
+/* ---- Overlay (countdown, game over) ---- */
+#overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+#overlay.active {
+  display: flex;
+  pointer-events: auto;
+}
+
+#overlay h2 {
+  font-size: 4rem;
+  color: #fff;
+}
+
+#overlay p {
+  font-size: 1.2rem;
+  color: #aaa;
+  margin-top: 1rem;
+}
+
+#overlay .btn {
+  margin-top: 1.5rem;
+  pointer-events: auto;
+}
+
+/* ---- Controls Help ---- */
+#controls-help {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: #555;
+  text-align: center;
+}
+
+#controls-help span {
+  margin: 0 1rem;
+}
+
+.key {
+  display: inline-block;
+  background: #16213e;
+  border: 1px solid #444;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  color: #ccc;
+}
