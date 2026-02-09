@@ -5,34 +5,34 @@
 
 :root {
   /* Backgrounds (darkest to lightest) */
-  --bg-deep:       #07070f;
-  --bg-dark:       #0a0a1a;
-  --bg-panel:      #0d0d1a;
-  --bg-elevated:   #1a1a2e;
+  --bg-deep: #07070f;
+  --bg-dark: #0a0a1a;
+  --bg-panel: #0d0d1a;
+  --bg-elevated: #1a1a2e;
 
   /* Primary Accent — Orange */
-  --accent:        #ff6b00;
-  --accent-hover:  #cc5500;
-  --accent-glow:   rgba(255, 107, 0, 0.3);
-  --accent-dim:    rgba(255, 107, 0, 0.08);
+  --accent: #ff6b00;
+  --accent-hover: #cc5500;
+  --accent-glow: rgba(255, 107, 0, 0.3);
+  --accent-dim: rgba(255, 107, 0, 0.08);
 
   /* Borders */
-  --border-dark:   #2a2a4a;
+  --border-dark: #2a2a4a;
   --border-subtle: #1a1a2e;
 
   /* Text */
-  --text-primary:  #c8c8e0;
-  --text-muted:    #888;
-  --text-dim:      #555;
-  --text-dark:     #333;
+  --text-primary: #c8c8e0;
+  --text-muted: #888;
+  --text-dim: #555;
+  --text-dark: #333;
 
   /* Player Colors */
-  --p1:            #00d4ff;
-  --p2:            #ff4444;
+  --p1: #00d4ff;
+  --p2: #ff4444;
 
   /* Status */
-  --status-ok:     #2ecc71;
-  --status-error:  #e74c3c;
+  --status-ok: #2ecc71;
+  --status-error: #e74c3c;
 }
 
 * {
@@ -75,8 +75,9 @@ h1 {
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 4px;
-  text-shadow: 0 0 20px var(--accent-glow),
-               0 0 40px rgba(255, 107, 0, 0.15);
+  text-shadow:
+    0 0 20px var(--accent-glow),
+    0 0 40px rgba(255, 107, 0, 0.15);
 }
 
 /* ---- Lobby ---- */
