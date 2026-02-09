@@ -24,51 +24,57 @@
         </button>
       </div>
 
-      <p class="maze-rotation-note">Maps rotate randomly every 5 minutes during gameplay</p>
+      <p class="maze-rotation-note">
+        Maps rotate randomly every 5 minutes during gameplay
+      </p>
     </div>
 
     <!-- Maze selector builder script (runs after constants.js) -->
     <script>
       function buildMazeSelector() {
-        const grid = document.getElementById('maze-grid');
+        const grid = document.getElementById("maze-grid");
         if (!grid) return;
-        grid.innerHTML = '';
+        grid.innerHTML = "";
         MAZE_KEYS.forEach((key, i) => {
           const maze = MAZES[key];
-          const div = document.createElement('div');
-          div.className = 'maze-option' + (i === 0 ? ' selected' : '');
+          const div = document.createElement("div");
+          div.className = "maze-option" + (i === 0 ? " selected" : "");
           div.dataset.maze = key;
           div.onclick = () => {
             Game.selectMaze(key);
-            document.querySelectorAll('.maze-option').forEach(el => el.classList.remove('selected'));
-            div.classList.add('selected');
+            document
+              .querySelectorAll(".maze-option")
+              .forEach((el) => el.classList.remove("selected"));
+            div.classList.add("selected");
           };
 
           // Mini preview canvas
-          const preview = document.createElement('canvas');
-          const pw = 105, ph = 75;
-          preview.width = pw; preview.height = ph;
-          const pctx = preview.getContext('2d');
+          const preview = document.createElement("canvas");
+          const pw = 105,
+            ph = 75;
+          preview.width = pw;
+          preview.height = ph;
+          const pctx = preview.getContext("2d");
           const cw = pw / maze.data[0].length;
           const ch = ph / maze.data.length;
           maze.data.forEach((row, r) => {
             row.forEach((cell, c) => {
-              if (cell === 1) pctx.fillStyle = '#3a3a5c';
-              else if (cell === 2) pctx.fillStyle = '#00d4ff';
-              else if (cell === 3) pctx.fillStyle = '#ff4444';
-              else if (cell === 4) pctx.fillStyle = '#44ff44';
-              else if (cell === 5) pctx.fillStyle = '#ffaa00';
-              else pctx.fillStyle = '#0a0a1a';
+              if (cell === 1) pctx.fillStyle = "#3a3a5c";
+              else if (cell === 2) pctx.fillStyle = "#00d4ff";
+              else if (cell === 3) pctx.fillStyle = "#ff4444";
+              else if (cell === 4) pctx.fillStyle = "#44ff44";
+              else if (cell === 5) pctx.fillStyle = "#ffaa00";
+              else pctx.fillStyle = "#0a0a1a";
               pctx.fillRect(c * cw, r * ch, cw, ch);
             });
           });
 
-          const name = document.createElement('div');
-          name.className = 'maze-name';
+          const name = document.createElement("div");
+          name.className = "maze-name";
           name.textContent = maze.name;
 
-          const desc = document.createElement('div');
-          desc.className = 'maze-desc';
+          const desc = document.createElement("div");
+          desc.className = "maze-desc";
           desc.textContent = maze.desc;
 
           div.appendChild(preview);
@@ -78,7 +84,9 @@
         });
       }
       // Build after DOM + constants are ready
-      window.addEventListener('DOMContentLoaded', () => setTimeout(buildMazeSelector, 0));
+      window.addEventListener("DOMContentLoaded", () =>
+        setTimeout(buildMazeSelector, 0),
+      );
     </script>
 
     <!-- ===== Connection UI (Phase 3) ===== -->
@@ -94,13 +102,13 @@
     <!-- ===== Controls Help ===== -->
     <div id="controls-help" style="display: none">
       <span>
-        <strong style="color: #3498db">P1:</strong>
+        <strong style="color: #00d4ff">P1:</strong>
         <span class="key">W</span><span class="key">A</span
         ><span class="key">S</span><span class="key">D</span> move ·
         <span class="key">Space</span> shoot
       </span>
       <span>
-        <strong style="color: #e74c3c">P2:</strong>
+        <strong style="color: #ff4444">P2:</strong>
         <span class="key">↑</span><span class="key">←</span
         ><span class="key">↓</span><span class="key">→</span> move ·
         <span class="key">Enter</span> shoot

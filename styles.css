@@ -1,6 +1,39 @@
 /* ===========================================
    P2P Shooter POC — Styles
+   Retro Maze Combat — Unified Orange/Dark Theme
    =========================================== */
+
+:root {
+  /* Backgrounds (darkest to lightest) */
+  --bg-deep:       #07070f;
+  --bg-dark:       #0a0a1a;
+  --bg-panel:      #0d0d1a;
+  --bg-elevated:   #1a1a2e;
+
+  /* Primary Accent — Orange */
+  --accent:        #ff6b00;
+  --accent-hover:  #cc5500;
+  --accent-glow:   rgba(255, 107, 0, 0.3);
+  --accent-dim:    rgba(255, 107, 0, 0.08);
+
+  /* Borders */
+  --border-dark:   #2a2a4a;
+  --border-subtle: #1a1a2e;
+
+  /* Text */
+  --text-primary:  #c8c8e0;
+  --text-muted:    #888;
+  --text-dim:      #555;
+  --text-dark:     #333;
+
+  /* Player Colors */
+  --p1:            #00d4ff;
+  --p2:            #ff4444;
+
+  /* Status */
+  --status-ok:     #2ecc71;
+  --status-error:  #e74c3c;
+}
 
 * {
   margin: 0;
@@ -10,8 +43,8 @@
 
 body {
   font-family: "Courier New", Courier, monospace;
-  background: #1a1a2e;
-  color: #eee;
+  background: var(--bg-deep);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -20,12 +53,30 @@ body {
   overflow: hidden;
 }
 
+/* CRT scanline overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.06) 0px,
+    rgba(0, 0, 0, 0.06) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
 h1 {
   font-size: 2rem;
   margin-bottom: 0.5rem;
-  color: #e94560;
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 4px;
+  text-shadow: 0 0 20px var(--accent-glow),
+               0 0 40px rgba(255, 107, 0, 0.15);
 }
 
 /* ---- Lobby ---- */
@@ -35,7 +86,7 @@ h1 {
 }
 
 #lobby p {
-  color: #aaa;
+  color: var(--text-muted);
   margin-bottom: 1.5rem;
   font-size: 0.9rem;
 }
@@ -60,24 +111,26 @@ h1 {
 }
 
 .btn-primary {
-  background: #e94560;
-  border-color: #e94560;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
 }
 
 .btn-primary:hover {
-  background: #c73650;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 14px var(--accent-glow);
 }
 
 .btn-secondary {
   background: transparent;
-  border-color: #e94560;
-  color: #e94560;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .btn-secondary:hover {
-  background: #e94560;
-  color: #fff;
+  background: var(--accent);
+  color: #000;
 }
 
 /* ---- Connection UI ---- */
@@ -89,42 +142,47 @@ h1 {
 
 #connectionUI .room-code {
   font-size: 2rem;
-  color: #e94560;
+  color: var(--accent);
   letter-spacing: 6px;
   margin: 1rem 0;
   user-select: all;
+  text-shadow: 0 0 10px var(--accent-glow);
 }
 
 #connectionUI input {
   padding: 0.75rem 1rem;
   font-family: "Courier New", Courier, monospace;
   font-size: 1.2rem;
-  background: #16213e;
-  border: 2px solid #e94560;
-  color: #eee;
+  background: var(--bg-panel);
+  border: 2px solid var(--accent);
+  color: var(--text-primary);
   text-align: center;
   letter-spacing: 4px;
   width: 280px;
   outline: none;
 }
 
+#connectionUI input:focus {
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
 #connectionUI input::placeholder {
-  color: #555;
+  color: var(--text-dim);
   letter-spacing: 2px;
 }
 
 #connectionStatus {
   margin-top: 1rem;
   font-size: 0.9rem;
-  color: #aaa;
+  color: var(--text-muted);
 }
 
 .status-connected {
-  color: #2ecc71 !important;
+  color: var(--status-ok) !important;
 }
 
 .status-error {
-  color: #e74c3c !important;
+  color: var(--status-error) !important;
 }
 
 /* ---- Canvas Wrapper ---- */
@@ -134,9 +192,9 @@ h1 {
 }
 
 canvas {
-  border: 3px solid #2a2a4a;
+  border: 3px solid var(--border-dark);
   display: block;
-  background: #0a0a1a;
+  background: var(--bg-dark);
 }
 
 /* ---- Overlay (countdown, game over) ---- */
@@ -167,7 +225,7 @@ canvas {
 
 #overlay p {
   font-size: 1.2rem;
-  color: #aaa;
+  color: var(--text-muted);
   margin-top: 1rem;
 }
 
@@ -183,10 +241,11 @@ canvas {
 
 #maze-selector h3 {
   font-size: 0.75rem;
-  color: #ff6b00;
+  color: var(--accent);
   letter-spacing: 3px;
   margin-bottom: 0.75rem;
   text-transform: uppercase;
+  text-shadow: 0 0 10px var(--accent-dim);
 }
 
 #maze-grid {
@@ -198,8 +257,8 @@ canvas {
 }
 
 .maze-option {
-  background: #0d0d1a;
-  border: 2px solid #2a2a4a;
+  background: var(--bg-panel);
+  border: 2px solid var(--border-dark);
   padding: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -208,12 +267,12 @@ canvas {
 }
 
 .maze-option:hover {
-  border-color: #ff6b00;
+  border-color: var(--accent);
 }
 
 .maze-option.selected {
-  border-color: #ff6b00;
-  box-shadow: 0 0 12px rgba(255, 107, 0, 0.3);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .maze-option canvas {
@@ -225,7 +284,7 @@ canvas {
 
 .maze-name {
   font-size: 0.55rem;
-  color: #ff6b00;
+  color: var(--accent);
   letter-spacing: 1px;
   margin-bottom: 0.2rem;
   font-weight: bold;
@@ -233,13 +292,13 @@ canvas {
 
 .maze-desc {
   font-size: 0.5rem;
-  color: #555;
+  color: var(--text-dim);
   line-height: 1.4;
 }
 
 .maze-rotation-note {
   font-size: 0.65rem;
-  color: #555;
+  color: var(--text-dim);
   margin-top: 1rem;
   font-style: italic;
 }
@@ -248,7 +307,7 @@ canvas {
 #controls-help {
   margin-top: 1rem;
   font-size: 0.75rem;
-  color: #555;
+  color: var(--text-dim);
   text-align: center;
 }
 
@@ -258,7 +317,7 @@ canvas {
 
 .key {
   display: inline-block;
-  background: #16213e;
+  background: var(--bg-panel);
   border: 1px solid #444;
   border-radius: 3px;
   padding: 1px 6px;

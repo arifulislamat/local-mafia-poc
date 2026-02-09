@@ -8,7 +8,7 @@ const Game = (() => {
   let countdownTimer = 0;
   let countdownValue = 0;
   let winner = null;
-  let selectedMazeKey = 'arena_classic';
+  let selectedMazeKey = "arena_classic";
   let mazeRotationStart = 0; // timestamp when current maze started
 
   // ---- Get spawn position from active maze ----
@@ -229,7 +229,7 @@ const Game = (() => {
 
   function rotateToRandomMaze() {
     // Pick a different maze
-    const otherKeys = MAZE_KEYS.filter(k => k !== activeMaze.key);
+    const otherKeys = MAZE_KEYS.filter((k) => k !== activeMaze.key);
     const newKey = otherKeys[Math.floor(Math.random() * otherKeys.length)];
     switchMaze(newKey);
     Renderer.showMazeAnnouncement(activeMaze.name);
@@ -243,11 +243,17 @@ const Game = (() => {
     // Respawn both players at new maze spawns, keep scores
     const spawn1 = getSpawn(1);
     const spawn2 = getSpawn(2);
-    p1.x = spawn1.x; p1.y = spawn1.y;
-    p1.health = PLAYER_HEALTH; p1.alive = true; p1.respawnTimer = 0;
+    p1.x = spawn1.x;
+    p1.y = spawn1.y;
+    p1.health = PLAYER_HEALTH;
+    p1.alive = true;
+    p1.respawnTimer = 0;
     p1.dir = { ...DEFAULT_DIR_P1 };
-    p2.x = spawn2.x; p2.y = spawn2.y;
-    p2.health = PLAYER_HEALTH; p2.alive = true; p2.respawnTimer = 0;
+    p2.x = spawn2.x;
+    p2.y = spawn2.y;
+    p2.health = PLAYER_HEALTH;
+    p2.alive = true;
+    p2.respawnTimer = 0;
     p2.dir = { ...DEFAULT_DIR_P2 };
     bullets = [];
 
@@ -256,8 +262,8 @@ const Game = (() => {
   }
 
   function highlightSelectedMaze() {
-    document.querySelectorAll('.maze-option').forEach(el => {
-      el.classList.toggle('selected', el.dataset.maze === selectedMazeKey);
+    document.querySelectorAll(".maze-option").forEach((el) => {
+      el.classList.toggle("selected", el.dataset.maze === selectedMazeKey);
     });
   }
 
@@ -301,9 +307,16 @@ const Game = (() => {
 
     if (gameState === STATE.PLAYING) {
       // P1: WASD + Space
-      processPlayerInput(p1, 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'Space');
+      processPlayerInput(p1, "KeyW", "KeyS", "KeyA", "KeyD", "Space");
       // P2: Arrows + Enter
-      processPlayerInput(p2, 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter');
+      processPlayerInput(
+        p2,
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "Enter",
+      );
 
       updateBullets();
       updateRespawns(dt);
@@ -313,8 +326,8 @@ const Game = (() => {
     // --- Render ---
     Renderer.drawArena();
     Renderer.drawMaze();
-    Renderer.drawPlayer(p1, 'P1');
-    Renderer.drawPlayer(p2, 'P2');
+    Renderer.drawPlayer(p1, "P1");
+    Renderer.drawPlayer(p2, "P2");
     Renderer.drawBullets(bullets);
 
     // Maze timer for HUD
@@ -370,9 +383,9 @@ const Game = (() => {
     mazeRotationStart = Date.now();
 
     // Hide lobby, show game
-    document.getElementById('lobby').style.display = 'none';
-    document.getElementById('gameContainer').style.display = 'block';
-    document.getElementById('controls-help').style.display = 'block';
+    document.getElementById("lobby").style.display = "none";
+    document.getElementById("gameContainer").style.display = "block";
+    document.getElementById("controls-help").style.display = "block";
 
     // Re-create players with correct spawn for selected maze
     p1 = createPlayer(1);
