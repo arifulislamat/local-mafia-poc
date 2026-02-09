@@ -473,7 +473,7 @@ const Renderer = (() => {
   }
 
   // ---- Game Over Screen ----
-  function drawGameOver(winner) {
+  function drawGameOver(winner, isGuest) {
     ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -496,11 +496,61 @@ const Renderer = (() => {
     ctx.fillStyle = "#666666";
     ctx.font = "16px Courier New";
     ctx.fillText(
-      "Press R to restart",
+      isGuest ? "Waiting for host to restart..." : "Press R to restart",
       CANVAS_WIDTH / 2,
       CANVAS_HEIGHT / 2 + 30,
     );
 
+    ctx.textBaseline = "alphabetic";
+  }
+
+  // ---- Online Connection Indicator ----
+  function drawOnlineIndicator(connected) {
+    const x = CANVAS_WIDTH - 16;
+    const y = CANVAS_HEIGHT - 16;
+    const color = connected ? "#2ecc71" : "#e74c3c";
+
+    // Glowing dot
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Label
+    ctx.fillStyle = "#888";
+    ctx.font = "10px Courier New";
+    ctx.textAlign = "right";
+    ctx.fillText("P2P", x - 10, y + 4);
+  }
+
+  // ---- Disconnect Overlay ----
+  function drawDisconnected() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    ctx.shadowColor = "#ff4444";
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = "#ff4444";
+    ctx.font = "bold 36px Courier New";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(
+      "OPPONENT DISCONNECTED",
+      CANVAS_WIDTH / 2,
+      CANVAS_HEIGHT / 2 - 20,
+    );
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#888";
+    ctx.font = "16px Courier New";
+    ctx.fillText(
+      "Returning to lobby...",
+      CANVAS_WIDTH / 2,
+      CANVAS_HEIGHT / 2 + 25,
+    );
     ctx.textBaseline = "alphabetic";
   }
 
@@ -552,6 +602,8 @@ const Renderer = (() => {
     drawCountdown,
     drawRespawnTimer,
     drawGameOver,
+    drawOnlineIndicator,
+    drawDisconnected,
     showMazeAnnouncement,
     drawMazeAnnouncement,
   };

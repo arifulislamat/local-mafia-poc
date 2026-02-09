@@ -19,8 +19,19 @@
       </div>
 
       <div class="lobby-buttons">
-        <button class="btn btn-primary" onclick="Game.startLocalGame()">
-          ▶ Local 2-Player
+        <button class="btn btn-secondary" onclick="Game.showOnlineUI('host')">
+          🌐 Create Online Game
+        </button>
+        <button class="btn btn-secondary" onclick="Game.showOnlineUI('join')">
+          🔗 Join Online Game
+        </button>
+      </div>
+      <div class="lobby-buttons" style="margin-top: 0.5rem">
+        <button
+          class="btn btn-primary btn-small"
+          onclick="Game.startLocalGame()"
+        >
+          ▶ Local 2-Player (Same Keyboard)
         </button>
       </div>
 
@@ -89,9 +100,41 @@
       );
     </script>
 
-    <!-- ===== Connection UI (Phase 3) ===== -->
+    <!-- ===== Connection UI (Online Play) ===== -->
     <div id="connectionUI">
-      <p id="connectionStatus">Initializing...</p>
+      <!-- Host Panel -->
+      <div id="hostUI" style="display: none">
+        <h3>CREATE ONLINE GAME</h3>
+        <p class="online-subtitle">Share this room code with your opponent:</p>
+        <div class="room-code" id="roomCode">------</div>
+        <p id="connectionStatus">Creating room...</p>
+        <button class="btn btn-secondary" onclick="Game.cancelOnline()">
+          ✕ Cancel
+        </button>
+      </div>
+
+      <!-- Join Panel -->
+      <div id="joinUI" style="display: none">
+        <h3>JOIN ONLINE GAME</h3>
+        <p class="online-subtitle">Enter the room code:</p>
+        <input
+          type="text"
+          id="roomCodeInput"
+          placeholder="ROOM CODE"
+          maxlength="6"
+          autocomplete="off"
+          onkeydown="if (event.key === 'Enter') Game.joinOnlineGame();"
+        />
+        <div class="join-buttons">
+          <button class="btn btn-primary" onclick="Game.joinOnlineGame()">
+            Connect
+          </button>
+          <button class="btn btn-secondary" onclick="Game.cancelOnline()">
+            ✕ Cancel
+          </button>
+        </div>
+        <p id="joinStatus"></p>
+      </div>
     </div>
 
     <!-- ===== Game Canvas ===== -->
@@ -117,9 +160,11 @@
     </div>
 
     <!-- ===== Scripts (order matters) ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
     <script src="constants.js"></script>
     <script src="physics.js"></script>
     <script src="renderer.js"></script>
+    <script src="network.js"></script>
     <script src="game.js"></script>
   </body>
 </html>

@@ -134,6 +134,20 @@ h1 {
   color: #000;
 }
 
+.btn-small {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  transition:
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn-small:hover {
+  opacity: 1;
+}
+
 /* ---- Connection UI ---- */
 #connectionUI {
   display: none;
@@ -141,13 +155,29 @@ h1 {
   padding: 2rem;
 }
 
-#connectionUI .room-code {
-  font-size: 2rem;
+#connectionUI h3 {
+  font-size: 0.85rem;
   color: var(--accent);
-  letter-spacing: 6px;
-  margin: 1rem 0;
+  letter-spacing: 3px;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px var(--accent-dim);
+}
+
+.online-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+#connectionUI .room-code {
+  font-size: 2.5rem;
+  color: var(--accent);
+  letter-spacing: 8px;
+  margin: 1.2rem 0;
   user-select: all;
-  text-shadow: 0 0 10px var(--accent-glow);
+  text-shadow: 0 0 14px var(--accent-glow);
+  font-weight: bold;
 }
 
 #connectionUI input {
@@ -159,6 +189,7 @@ h1 {
   color: var(--text-primary);
   text-align: center;
   letter-spacing: 4px;
+  text-transform: uppercase;
   width: 280px;
   outline: none;
 }
@@ -170,12 +201,22 @@ h1 {
 #connectionUI input::placeholder {
   color: var(--text-dim);
   letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
-#connectionStatus {
+.join-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+#connectionStatus,
+#joinStatus {
   margin-top: 1rem;
   font-size: 0.9rem;
   color: var(--text-muted);
+  min-height: 1.2em;
 }
 
 .status-connected {

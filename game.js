@@ -9,12 +9,24 @@ const Game = (() => {
   let countdownValue = 0;
   let winner = null;
   let selectedMazeKey = "arena_classic";
-  let mazeRotationStart = 0; // timestamp when current maze started
+  let mazeRotationStart = 0;
+
+  // ---- Online Mode State ----
+  let gameMode = "local"; // 'local' | 'online-host' | 'online-guest'
+  let remoteInput = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    shoot: false,
+  };
+  let isDisconnected = false;
+  let displayMazeTimeLeft = null;
+  let initialized = false;
 
   // ---- Get spawn position from active maze ----
   function getSpawn(playerId) {
     const spawns = playerId === 1 ? activeMaze.p1Spawns : activeMaze.p2Spawns;
-    // Pick a random spawn if multiple exist
     return spawns.length > 0
       ? { ...spawns[Math.floor(Math.random() * spawns.length)] }
       : { x: 100, y: 100 };
@@ -42,8 +54,9 @@ const Game = (() => {
   let bullets = [];
 
   // ---- Input State ----
-  // P1: WASD + Space
-  // P2: Arrow keys + Enter
+  // P1 (local):  WASD + Space
+  // P2 (local):  Arrow keys + Enter
+  // Online:      Both use WASD + Space (each on own machine)
   const keys = {};
 
   function handleKeyDown(e) {
@@ -58,8 +71,12 @@ const Game = (() => {
       e.preventDefault();
     }
 
-    // Restart on R when game over
-    if (e.code === "KeyR" && gameState === STATE.GAME_OVER) {
+    // Restart on R when game over (host or local only)
+    if (
+      e.code === "KeyR" &&
+      gameState === STATE.GAME_OVER &&
+      gameMode !== "online-guest"
+    ) {
       restartGame();
     }
   }
@@ -68,7 +85,7 @@ const Game = (() => {
     keys[e.code] = false;
   }
 
-  // ---- Player Movement ----
+  // ---- Player Movement (local key-based) ----
   function processPlayerInput(player, up, down, left, right, shoot) {
     if (!player.alive) return;
 
@@ -115,6 +132,55 @@ const Game = (() => {
 
     // Shooting
     if (keys[shoot]) {
+      tryShoot(player);
+    }
+  }
+
+  // ---- Remote Player Movement (from network input) ----
+  function processRemoteInput(player) {
+    if (!player.alive) return;
+
+    let newX = player.x;
+    let newY = player.y;
+    let moved = false;
+
+    if (remoteInput.up) {
+      newY -= PLAYER_SPEED;
+      player.dir = { dx: 0, dy: -1 };
+      moved = true;
+    }
+    if (remoteInput.down) {
+      newY += PLAYER_SPEED;
+      player.dir = { dx: 0, dy: 1 };
+      moved = true;
+    }
+    if (remoteInput.left) {
+      newX -= PLAYER_SPEED;
+      player.dir = { dx: -1, dy: 0 };
+      moved = true;
+    }
+    if (remoteInput.right) {
+      newX += PLAYER_SPEED;
+      player.dir = { dx: 1, dy: 0 };
+      moved = true;
+    }
+
+    if (moved) {
+      if (
+        Physics.canMoveTo(newX, player.y) &&
+        !collidesWithOtherPlayer(player, newX, player.y)
+      ) {
+        player.x = newX;
+      }
+      if (
+        Physics.canMoveTo(player.x, newY) &&
+        !collidesWithOtherPlayer(player, player.x, newY)
+      ) {
+        player.y = newY;
+      }
+    }
+
+    if (remoteInput.shoot) {
       tryShoot(player);
     }
   }
@@ -293,7 +359,247 @@ const Game = (() => {
     startCountdown();
   }
 
+  // ======================================================
+  // ---- Network Functions (Online Mode) ----
+  // ======================================================
+
+  // Guest sends local WASD input to host every frame
+  function sendLocalInput() {
+    Network.send({
+      type: "input",
+      keys: {
+        up: !!keys["KeyW"],
+        down: !!keys["KeyS"],
+        left: !!keys["KeyA"],
+        right: !!keys["KeyD"],
+        shoot: !!keys["Space"],
+      },
+    });
+  }
+
+  // Host broadcasts full game state to guest every frame
+  function broadcastState() {
+    const mazeElapsed = (Date.now() - mazeRotationStart) / 1000;
+    const mazeTimeLeft = Math.max(0, MAZE_ROTATION_MS / 1000 - mazeElapsed);
+
+    Network.send({
+      type: "state",
+      p1: {
+        x: p1.x,
+        y: p1.y,
+        dir: p1.dir,
+        health: p1.health,
+        alive: p1.alive,
+        score: p1.score,
+        respawnTimer: p1.respawnTimer,
+      },
+      p2: {
+        x: p2.x,
+        y: p2.y,
+        dir: p2.dir,
+        health: p2.health,
+        alive: p2.alive,
+        score: p2.score,
+        respawnTimer: p2.respawnTimer,
+      },
+      bullets: bullets.map((b) => ({
+        x: b.x,
+        y: b.y,
+        dx: b.dx,
+        dy: b.dy,
+        owner: b.owner,
+      })),
+      gameState,
+      winner,
+      countdownValue,
+      mazeKey: selectedMazeKey,
+      mazeTimeLeft,
+    });
+  }
+
+  // Guest applies received state from host
+  function applyRemoteState(data) {
+    // Detect maze change
+    if (data.mazeKey && data.mazeKey !== selectedMazeKey) {
+      activeMaze = parseMaze(data.mazeKey);
+      selectedMazeKey = data.mazeKey;
+      mazeRotationStart = Date.now();
+      Renderer.showMazeAnnouncement(activeMaze.name);
+    }
+
+    // Apply player states
+    p1.x = data.p1.x;
+    p1.y = data.p1.y;
+    p1.dir = data.p1.dir;
+    p1.health = data.p1.health;
+    p1.alive = data.p1.alive;
+    p1.score = data.p1.score;
+    p1.respawnTimer = data.p1.respawnTimer;
+
+    p2.x = data.p2.x;
+    p2.y = data.p2.y;
+    p2.dir = data.p2.dir;
+    p2.health = data.p2.health;
+    p2.alive = data.p2.alive;
+    p2.score = data.p2.score;
+    p2.respawnTimer = data.p2.respawnTimer;
+
+    bullets = data.bullets;
+    gameState = data.gameState;
+    winner = data.winner;
+    countdownValue = data.countdownValue;
+    displayMazeTimeLeft = data.mazeTimeLeft;
+  }
+
+  // Route incoming network data
+  function handleNetworkData(data) {
+    // Config is a one-time setup message — always handle it
+    if (data.type === "config") {
+      selectedMazeKey = data.mazeKey;
+      activeMaze = parseMaze(data.mazeKey);
+      startOnlineGame(false);
+      return;
+    }
+
+    if (gameMode === "online-host") {
+      // Host receives input from guest
+      if (data.type === "input") {
+        remoteInput = data.keys;
+      }
+    } else if (gameMode === "online-guest") {
+      // Guest receives state from host
+      if (data.type === "state") {
+        applyRemoteState(data);
+      }
+    }
+  }
+
+  // Handle peer disconnection
+  function handleDisconnect() {
+    if (isDisconnected) return; // already handling
+    isDisconnected = true;
+
+    // Return to lobby after a brief delay
+    setTimeout(() => {
+      returnToLobby();
+    }, 3000);
+  }
+
+  // Return to lobby screen
+  function returnToLobby() {
+    Network.disconnect();
+    gameMode = "local";
+    gameState = STATE.LOBBY;
+    isDisconnected = false;
+    remoteInput = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      shoot: false,
+    };
+    displayMazeTimeLeft = null;
+    winner = null;
+    initialized = false;
+
+    document.getElementById("lobby").style.display = "block";
+    document.getElementById("connectionUI").style.display = "none";
+    document.getElementById("gameContainer").style.display = "none";
+    document.getElementById("controls-help").style.display = "none";
+    document.getElementById("hostUI").style.display = "none";
+    document.getElementById("joinUI").style.display = "none";
+  }
+
+  // ======================================================
+  // ---- Online UI ----
+  // ======================================================
+
+  function showOnlineUI(mode) {
+    document.getElementById("lobby").style.display = "none";
+    document.getElementById("connectionUI").style.display = "block";
+
+    if (mode === "host") {
+      document.getElementById("hostUI").style.display = "block";
+      document.getElementById("joinUI").style.display = "none";
+      document.getElementById("connectionStatus").textContent =
+        "Creating room...";
+      document.getElementById("connectionStatus").className = "";
+
+      Network.createHost({
+        onReady: (roomCode) => {
+          document.getElementById("roomCode").textContent = roomCode;
+          document.getElementById("connectionStatus").textContent =
+            "Waiting for opponent to join...";
+        },
+        onConnected: () => {
+          document.getElementById("connectionStatus").textContent =
+            "Opponent connected! Starting game...";
+          document.getElementById("connectionStatus").className =
+            "status-connected";
+
+          // Send config to guest
+          Network.send({ type: "config", mazeKey: selectedMazeKey });
+
+          // Start game as host after brief delay
+          setTimeout(() => startOnlineGame(true), 500);
+        },
+        onData: handleNetworkData,
+        onDisconnected: handleDisconnect,
+        onError: (msg) => {
+          document.getElementById("connectionStatus").textContent = msg;
+          document.getElementById("connectionStatus").className =
+            "status-error";
+        },
+      });
+    } else {
+      document.getElementById("hostUI").style.display = "none";
+      document.getElementById("joinUI").style.display = "block";
+      document.getElementById("joinStatus").textContent = "";
+      document.getElementById("roomCodeInput").value = "";
+      setTimeout(() => document.getElementById("roomCodeInput").focus(), 100);
+    }
+  }
+
+  function joinOnlineGame() {
+    const input = document.getElementById("roomCodeInput");
+    const code = input.value.trim().toUpperCase();
+
+    if (code.length < 4) {
+      document.getElementById("joinStatus").textContent =
+        "Enter a valid room code";
+      document.getElementById("joinStatus").className = "status-error";
+      return;
+    }
+
+    document.getElementById("joinStatus").textContent = "Connecting...";
+    document.getElementById("joinStatus").className = "";
+
+    Network.joinGame(code, {
+      onConnected: () => {
+        document.getElementById("joinStatus").textContent =
+          "Connected! Waiting for host to start...";
+        document.getElementById("joinStatus").className = "status-connected";
+      },
+      onData: handleNetworkData,
+      onDisconnected: handleDisconnect,
+      onError: (msg) => {
+        document.getElementById("joinStatus").textContent = msg;
+        document.getElementById("joinStatus").className = "status-error";
+      },
+    });
+  }
+
+  function cancelOnline() {
+    Network.disconnect();
+    document.getElementById("connectionUI").style.display = "none";
+    document.getElementById("hostUI").style.display = "none";
+    document.getElementById("joinUI").style.display = "none";
+    document.getElementById("lobby").style.display = "block";
+  }
+
+  // ======================================================
   // ---- Main Game Loop ----
+  // ======================================================
   let lastTime = 0;
 
   function gameLoop(timestamp) {
@@ -301,38 +607,59 @@ const Game = (() => {
     lastTime = timestamp;
 
     // --- Update ---
-    if (gameState === STATE.COUNTDOWN) {
-      updateCountdown();
+    if (gameMode === "online-guest") {
+      // Guest: only send input, state arrives via onData callback
+      sendLocalInput();
+    } else {
+      // Host or Local: run all physics
+      if (gameState === STATE.COUNTDOWN) {
+        updateCountdown();
+      }
+
+      if (gameState === STATE.PLAYING) {
+        if (gameMode === "local") {
+          // Local: P1 = WASD, P2 = Arrows
+          processPlayerInput(p1, "KeyW", "KeyS", "KeyA", "KeyD", "Space");
+          processPlayerInput(
+            p2,
+            "ArrowUp",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "Enter",
+          );
+        } else if (gameMode === "online-host") {
+          // Online host: P1 = local WASD, P2 = remote input
+          processPlayerInput(p1, "KeyW", "KeyS", "KeyA", "KeyD", "Space");
+          processRemoteInput(p2);
+        }
+
+        updateBullets();
+        updateRespawns(dt);
+        checkMazeRotation();
+      }
+
+      // Host broadcasts full state to guest each frame
+      if (gameMode === "online-host") {
+        broadcastState();
+      }
     }
 
-    if (gameState === STATE.PLAYING) {
-      // P1: WASD + Space
-      processPlayerInput(p1, "KeyW", "KeyS", "KeyA", "KeyD", "Space");
-      // P2: Arrows + Enter
-      processPlayerInput(
-        p2,
-        "ArrowUp",
-        "ArrowDown",
-        "ArrowLeft",
-        "ArrowRight",
-        "Enter",
-      );
-
-      updateBullets();
-      updateRespawns(dt);
-      checkMazeRotation();
-    }
-
-    // --- Render ---
+    // --- Render (always, all modes) ---
     Renderer.drawArena();
     Renderer.drawMaze();
     Renderer.drawPlayer(p1, "P1");
     Renderer.drawPlayer(p2, "P2");
     Renderer.drawBullets(bullets);
 
-    // Maze timer for HUD
-    const mazeElapsed = (Date.now() - mazeRotationStart) / 1000;
-    const mazeTimeLeft = Math.max(0, MAZE_ROTATION_MS / 1000 - mazeElapsed);
+    // HUD — maze timer
+    let mazeTimeLeft;
+    if (gameMode === "online-guest" && displayMazeTimeLeft !== null) {
+      mazeTimeLeft = displayMazeTimeLeft;
+    } else {
+      const mazeElapsed = (Date.now() - mazeRotationStart) / 1000;
+      mazeTimeLeft = Math.max(0, MAZE_ROTATION_MS / 1000 - mazeElapsed);
+    }
     Renderer.drawHUD(p1, p2, mazeTimeLeft);
 
     // Respawn timers
@@ -347,7 +674,17 @@ const Game = (() => {
       Renderer.drawCountdown(countdownValue);
     }
     if (gameState === STATE.GAME_OVER) {
-      Renderer.drawGameOver(winner);
+      Renderer.drawGameOver(winner, gameMode === "online-guest");
+    }
+
+    // Online connection indicator
+    if (gameMode !== "local") {
+      Renderer.drawOnlineIndicator(Network.isConnected());
+    }
+
+    // Disconnect overlay (on top of everything)
+    if (isDisconnected) {
+      Renderer.drawDisconnected();
     }
 
     requestAnimationFrame(gameLoop);
@@ -355,6 +692,9 @@ const Game = (() => {
 
   // ---- Initialization ----
   function init() {
+    if (initialized) return; // prevent double-adding listeners
+    initialized = true;
+
     canvas = document.getElementById("gameCanvas");
     ctx = canvas.getContext("2d");
     canvas.width = CANVAS_WIDTH;
@@ -376,18 +716,76 @@ const Game = (() => {
     }
   }
 
-  // ---- Start local game (Phase 1 & 2) ----
+  // ---- Update controls help text based on mode ----
+  function updateControlsHelp() {
+    const help = document.getElementById("controls-help");
+    if (!help) return;
+
+    if (gameMode === "local") {
+      help.innerHTML = `
+        <span><strong style="color: #00d4ff">P1:</strong>
+          <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> move ·
+          <span class="key">Space</span> shoot</span>
+        <span><strong style="color: #ff4444">P2:</strong>
+          <span class="key">↑</span><span class="key">←</span><span class="key">↓</span><span class="key">→</span> move ·
+          <span class="key">Enter</span> shoot</span>
+        <span><span class="key">R</span> restart</span>
+      `;
+    } else if (gameMode === "online-host") {
+      help.innerHTML = `
+        <span><strong style="color: #00d4ff">You (P1):</strong>
+          <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> move ·
+          <span class="key">Space</span> shoot</span>
+        <span><span class="key">R</span> restart</span>
+      `;
+    } else {
+      help.innerHTML = `
+        <span><strong style="color: #ff4444">You (P2):</strong>
+          <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> move ·
+          <span class="key">Space</span> shoot</span>
+      `;
+    }
+  }
+
+  // ---- Start local game (Phase 2) ----
   function startLocalGame() {
-    // Apply selected maze
+    gameMode = "local";
     activeMaze = parseMaze(selectedMazeKey);
     mazeRotationStart = Date.now();
 
     // Hide lobby, show game
     document.getElementById("lobby").style.display = "none";
+    document.getElementById("connectionUI").style.display = "none";
     document.getElementById("gameContainer").style.display = "block";
     document.getElementById("controls-help").style.display = "block";
+    updateControlsHelp();
 
     // Re-create players with correct spawn for selected maze
+    p1 = createPlayer(1);
+    p2 = createPlayer(2);
+    bullets = [];
+
+    init();
+    startCountdown();
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // ---- Start online game (Phase 3) ----
+  function startOnlineGame(isHost) {
+    gameMode = isHost ? "online-host" : "online-guest";
+    isDisconnected = false;
+    activeMaze = parseMaze(selectedMazeKey);
+    mazeRotationStart = Date.now();
+
+    // Hide UI, show game
+    document.getElementById("lobby").style.display = "none";
+    document.getElementById("connectionUI").style.display = "none";
+    document.getElementById("gameContainer").style.display = "block";
+    document.getElementById("controls-help").style.display = "block";
+    updateControlsHelp();
+
+    // Create players
     p1 = createPlayer(1);
     p2 = createPlayer(2);
     bullets = [];
@@ -401,8 +799,13 @@ const Game = (() => {
   return {
     init,
     startLocalGame,
+    startOnlineGame,
     restartGame,
     selectMaze,
-    getState: () => ({ p1, p2, bullets, gameState, winner }),
+    showOnlineUI,
+    joinOnlineGame,
+    cancelOnline,
+    returnToLobby,
+    getState: () => ({ p1, p2, bullets, gameState, winner, gameMode }),
   };
 })();
